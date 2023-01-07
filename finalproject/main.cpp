@@ -21,13 +21,13 @@ int node_count[200000];
 int capacity;
 vector<vector<int> > nets;
 vector<vector<int> > Cnode;
-vector<vector<int> > Fnode;    //fpga[i]存距離<=1的fpga
+vector<vector<int> > Fnode;         //fpga[i]存距離<=1的fpga
 vector<vector<int> > cddt;
 vector<vector<int> > copy_cddt;
-vector<int> F;       //存固定的node，用在Algo1
-vector<int> copy_F;       //存固定的node，用在Algo1
+vector<int> F;                      //存固定的node，用在Algo1
+vector<int> copy_F;                 //存固定的node，用在Algo1
 
-int partitions[200000]; //尚未確定分配-1
+int partitions[200000];             //存node分配給哪個FPGA(尚未確定分配-1)
 
 priority_queue<pair<pair<int, int>, int>, vector<pair<pair<int, int>, int> > , greater<pair<pair<int, int>, int> > > Q;
 priority_queue<pair<pair<int, int>, int>, vector<pair<pair<int, int>, int> >, greater<pair<pair<int, int>, int> > > R[200000];
@@ -42,11 +42,11 @@ string line, imfor;
 void ReadImformation(vector<string> v){
     int n;
     for(int i=0; i<6; i++){
-        ss.clear(); ss.str("");     // clear ss
+        ss.clear(); ss.str("");      // clear ss
         ss << v[i]; ss >> n;
         imformation[i] = n;
         cout << imformation[i] << " ";
-        ss.clear(); ss.str("");     // clear ss
+        ss.clear(); ss.str("");      // clear ss
     }
     cout << endl;
 }
@@ -55,9 +55,9 @@ void ReadImformation(vector<string> v){
 
 void ReadFpgaChannel(vector<string> v){
     int src, des;
-    ss.str(""); ss.clear();     // clear ss
+    ss.str(""); ss.clear();         // clear ss
     ss << v[0]; ss >> src;
-    ss.str(""); ss.clear();     // clear ss
+    ss.str(""); ss.clear();         // clear ss
     ss << v[1]; ss >> des;
     Fnode[src].push_back(des);
     Fnode[des].push_back(src);
@@ -124,7 +124,7 @@ void UpateAndCheck(int node, int fpga){
             set_intersection(cddt[Cnode[node][i]].begin(), cddt[Cnode[node][i]].end(), Fnode[fpga].begin(), Fnode[fpga].end(), back_inserter(temp));
             cddt[Cnode[node][i]] = temp;
             if(temp.size() == 0){
-                //cout << "=======Oops=======" << endl;
+                //cout << "=======here1=======" << endl;
                 traceback = 1;
                 break;
             }
@@ -166,11 +166,11 @@ int main(int argc, char *argv[]){
             }
         }
     }
-    for(int i=0; i<imformation[0]; i++){ // init
+    for(int i=0; i<imformation[0]; i++){        // init
         Fnode[i].resize(1, i);
     }
     for(int i=0; i<imformation[1]; i++){
-        ss.str(""); ss.clear();     // clear ss
+        ss.str(""); ss.clear();                 // clear ss
         getline(myFile, line);
         ss << line;
         while(getline(ss, imfor, ' ')){
@@ -179,11 +179,11 @@ int main(int argc, char *argv[]){
         ReadFpgaChannel(v);
         v.clear();
     }
-    for(int i=0; i<imformation[0]; i++){ // init
+    for(int i=0; i<imformation[0]; i++){        // init
         sort(Fnode[i].begin(), Fnode[i].end());
     }
     //算fpga_max_dis
-    for(int k=0; k<imformation[0]; k++){          //Floyd-Warshall
+    for(int k=0; k<imformation[0]; k++){        //Floyd-Warshall
         for(int i=0; i<imformation[0]; i++){
             for(int j=0; j<imformation[0]; j++){
                 if(fpga_channel[i][j] > fpga_channel[i][k] + fpga_channel[k][j]){
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]){
         fpga_max_dis[i] = max_dis;
     }  
 
-    //capacity
+    // capacity
     capacity = imformation[2];
     
     // ReadNode
@@ -241,7 +241,7 @@ int main(int argc, char *argv[]){
         v.clear();
     }
 
-    // 初始cddt
+    // init cddt
     for(int i=0; i<imformation[3]; i++){
         if(partitions[i] != -1){
             cddt[i].push_back(partitions[i]);
@@ -279,18 +279,10 @@ int main(int argc, char *argv[]){
     // using Q and R find partitions
     for(int i=0; i<imformation[3]; i++){
         if(partitions[i] == -1){
-            //Q.push(make_pair(make_pair(200000-Cnode[i].size(), cddt[i].size()), i));    //依照1.candidate數量(少) 2.node鄰居數(多)
             Q.push(make_pair(make_pair(cddt[i].size(), nets[i].size()), i));    //依照1.candidate數量(少) 2.node鄰居數(少)
         }
     }
     for(int i=0; i<Q.top().first.first; i++){
-        // for(int j=0; j<Cnode[Q.top().second].size(); j++){
-        //     if(partitions[Cnode[Q.top().second][j]] != -1){
-        //         if(cddt[Q.top().second][i] != partitions[Cnode[Q.top().second][j]]){
-        //             external_degree[Q.top().second][cddt[Q.top().second][i]]++;
-        //         }
-        //     }
-        // }
         for(int j=0; j<nets[Q.top().second].size(); j++){
             if(partitions[nets[Q.top().second][j]] != -1){
                 if(cddt[Q.top().second][i] != partitions[nets[Q.top().second][j]]){
@@ -298,8 +290,7 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-        //R[i].push(make_pair(make_pair(fpga_capacity_predict[cddt[i][j]], 200000-Fnode[cddt[i][j]].size()), cddt[i][j]));    //依照1.predict數量 2.fpga鄰居數(多)
-        R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.predict數量 2.fpga鄰居數(多)
+        R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.external_degree數量(少) 2.predict(少)
     }
 
     for(int i=0; i<imformation[3]; i++){
@@ -335,7 +326,6 @@ int main(int argc, char *argv[]){
             int v_node, v_fpga;
             v_node = Q.top().second; Q.pop();
             v_fpga = R[v_node].top().second; R[v_node].pop();
-            //cout << v_node << " " << v_fpga << endl;
             cout << "Q_size: " << Q.size() << endl;
             traceback = 0;
 
@@ -385,13 +375,6 @@ int main(int argc, char *argv[]){
                 } 
 
                 for(int i=0; i<Q.top().first.first; i++){
-                    // for(int j=0; j<Cnode[Q.top().second].size(); j++){
-                    //     if(partitions[Cnode[Q.top().second][j]] != -1){
-                    //         if(cddt[Q.top().second][i] != partitions[Cnode[Q.top().second][j]]){
-                    //             external_degree[Q.top().second][cddt[Q.top().second][i]]++;
-                    //         }
-                    //     }
-                    // }
                     for(int j=0; j<nets[Q.top().second].size(); j++){
                         if(partitions[nets[Q.top().second][j]] != -1){
                             if(cddt[Q.top().second][i] != partitions[nets[Q.top().second][j]]){
@@ -399,8 +382,7 @@ int main(int argc, char *argv[]){
                             }
                         }
                     }
-                    //R[i].push(make_pair(make_pair(fpga_capacity_predict[cddt[i][j]], 200000-Fnode[cddt[i][j]].size()), cddt[i][j]));    //依照1.predict數量 2.fpga鄰居數(多)
-                    R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.predict數量 2.fpga鄰居數(多)
+                    R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.external_degree數量(少) 2.predict(少)
                 }
 
             }
@@ -434,13 +416,6 @@ int main(int argc, char *argv[]){
                     R[v_node].pop();
                 }
                 for(int i=0; i<Q.top().first.first; i++){
-                    // for(int j=0; j<Cnode[Q.top().second].size(); j++){
-                    //     if(partitions[Cnode[Q.top().second][j]] != -1){
-                    //         if(cddt[Q.top().second][i] != partitions[Cnode[Q.top().second][j]]){
-                    //             external_degree[Q.top().second][cddt[Q.top().second][i]]++;
-                    //         }
-                    //     }
-                    // }
                     for(int j=0; j<nets[Q.top().second].size(); j++){
                         if(partitions[nets[Q.top().second][j]] != -1){
                             if(cddt[Q.top().second][i] != partitions[nets[Q.top().second][j]]){
@@ -448,8 +423,7 @@ int main(int argc, char *argv[]){
                             }
                         }
                     }
-                    //R[i].push(make_pair(make_pair(fpga_capacity_predict[cddt[i][j]], 200000-Fnode[cddt[i][j]].size()), cddt[i][j]));    //依照1.predict數量 2.fpga鄰居數(多)
-                    R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.predict數量 2.fpga鄰居數(多)
+                    R[Q.top().second].push(make_pair(make_pair(external_degree[Q.top().second][cddt[Q.top().second][i]] ,fpga_capacity_predict[cddt[Q.top().second][i]]), cddt[Q.top().second][i]));    //依照1.external_degree數量(少) 2.predict(少)
                 } 
             }
         }
